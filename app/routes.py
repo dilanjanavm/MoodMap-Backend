@@ -1,7 +1,11 @@
-from flask import Blueprint, request, jsonify,session
+
 from app.prediction import predict_emotions, get_prediction_proba
 from app.utils import create_response, create_error
+
+from flask import Blueprint, request, jsonify, session
 from werkzeug.security import generate_password_hash, check_password_hash
+from app.models import db, User  # Import db from models, not directly from app
+
 
 main = Blueprint('main', __name__)
 
@@ -28,15 +32,28 @@ def predict():
 
 @main.route('/register', methods=['POST'])
 def register():
+    print(request.json)
     data = request.json
+    data = request.json
+    username = data.get('username')
     email = data.get('email')
     password = data.get('password')
 
-    if email in users_db:
+    if not username or not email or not password:
+        return jsonify({'message': 'Username, email, and password are required'}), 400
+
+    existing_user = User.query.filter_by(email=email).first()
+    if existing_user:
         return jsonify({'message': 'User already exists'}), 400
 
     hashed_password = generate_password_hash(password)
-    users_db[email] = hashed_password
+
+    # Create a new user instance
+    new_user = User(username=username, email=email, password=hashed_password)
+
+    db.session.add(new_user)
+    db.session.commit()
+
     return jsonify({'message': 'User registered successfully'}), 201
 
 @main.route('/login', methods=['POST'])
