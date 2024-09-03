@@ -6,5 +6,5 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.getenv(
         'DATABASE_URL', 'mysql+mysqlconnector://root:root@localhost/moodmap')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    # Add other configuration settings as needed
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', '112233344')
 

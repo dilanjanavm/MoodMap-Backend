@@ -1,3 +1,4 @@
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
 from app.prediction import predict_emotions, get_prediction_proba
 from app.utils import create_response, create_error
@@ -13,11 +14,13 @@ main = Blueprint('main', __name__)
 users_db = {}
 
 @main.route('/predict', methods=['POST'])
+@jwt_required()
 def predict():
     data = request.get_json()
     text = data.get('text', '')
     print(text)
-
+    current_user = get_jwt_identity()
+    print(current_user)
     if not text:
         return create_error(status=400)
 
@@ -62,11 +65,21 @@ def login():
     email = data.get('email')
     password = data.get('password')
 
-    hashed_password = users_db.get(email)
+    # Query the user from the database
+    user = User.query.filter_by(email=email).first()
 
-    if hashed_password and check_password_hash(hashed_password, password):
-        session['user'] = email
-        return jsonify({'message': 'Login successful'}), 200
+    print(user.password, password)
+    if user and check_password_hash(user.password, password):
+        print('here')
+        access_token = create_access_token(identity={'email': user.email})
+        return create_response(
+            data={'access_token': access_token},
+            message='Login successful',
+            status=200
+        )
 
-    return jsonify({'message': 'Invalid email or password'}), 401
+    return create_error(
+        message='Invalid email or password',
+        status=401
+    )
 
